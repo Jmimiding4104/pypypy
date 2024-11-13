@@ -64,11 +64,10 @@ async def add_user(user: userList):
 
 # 比對是否有此人
 
-@app.post("/count/")
+@app.post("/search/")
 async def matching_id(user: userList):
     print(user)
     idNumber = user.idNumber
-    print(idNumber)
     result = collection.find_one({"idNumber": idNumber})
     if result:
         result['_id'] = str(result['_id'])  # 轉換 ObjectId
