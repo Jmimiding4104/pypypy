@@ -50,7 +50,8 @@ async def connect_to_mongo():
 @app.on_event("startup")
 async def startup_event():
     await connect_to_mongo()
-    
+
+
 @app.post("/add_user/", response_model=userList)
 async def add_user(user: userList):
     # 將 user 物件轉換成字典
@@ -64,9 +65,8 @@ async def add_user(user: userList):
 
 # 比對是否有此人
 
-@app.post("/search/")
+@app.get("/search/")
 async def matching_id(user: userList):
-    print(user)
     idNumber = user.idNumber
     result = collection.find_one({"idNumber": idNumber})
     if result:
@@ -75,60 +75,28 @@ async def matching_id(user: userList):
     else:
         raise HTTPException(status_code=404, detail="未找到符合的 ID")
 
-# 取得所有 userList
-@app.get("/count/", response_model=List[userList])
-async def get_all_todos():
-    todos = []
-    for todo in collection.find():
-        todo['_id'] = str(todo['_id'])
-        todos.append(todo)
+# 更新++
+@app.put("/add/{item}", response_model=userList)
+async def add_item(item: str, data: userList):
+    if item not in ["healthMeasurement", "healthEducation", "exercise"]:
+        raise HTTPException(status_code=400, detail="無效的欄位名稱")
 
-    return todos
-
-
-# 建立新的 userList
-@app.post("/todos/", response_model=userList)
-async def create_todo(todo: userList):
-    todo_dict = todo.dict()
-    collection.insert_one(todo_dict)
-    return todo
-
-
-# 取得單一資料
-@app.get("/todos/{id}", response_model=userList)
-async def get_one_todos(id: str):
-    todo_id = ObjectId(id)
-    result = collection.find_one({"_id": todo_id})
-    print(result)
-    if result:
-        result['_id'] = str(result['_id'])
-        return result
-    else:
-        raise HTTPException(status_code=404, detail="未找到資料")
-
-# 更新 ToDo
-
-
-@app.put("/todos/{id}", response_model=userList)
-async def update_todo(id: str, updatedTodo: userList):
-    todo_id = ObjectId(id)
-    result = collection.update_one(
-        {"_id": todo_id},  # 查找條件
-        {"$set": {"title": updatedTodo.title, "description": updatedTodo.description,
-                  "completed": updatedTodo.completed}}
+    update_result = collection.find_one_and_update(
+        {"idNumber": data.idNumber},
+        {"$inc": {item: 1}},  # 動態更新指定欄位
+        return_document=True  # 返回更新後的文件
     )
-    if result.matched_count > 0:
-        updated_todo = await get_one_todos(id)
-        return updated_todo
+    if update_result:
+        update_result["_id"] = str(update_result["_id"])  # 轉換 ObjectId
+        return update_result
     else:
-        raise HTTPException(status_code=404, detail="未找到資料")
-
+        raise HTTPException(status_code=404, detail="未找到符合的 ID")
+# 建立新的 userList
 
 # 刪除 ToDo
-@app.delete("/todos/{id}", response_model=userList)
+@app.delete("/user/{id}", response_model=userList)
 async def delete_todo(id: str):
-    todo_id = ObjectId(id)
-    result = collection.delete_one({"_id": todo_id})
+    result = collection.delete_one({"idNumber": id})
 
     if result.deleted_count > 0:
         raise HTTPException(status_code=200, detail="刪除成功")
