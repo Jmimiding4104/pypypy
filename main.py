@@ -14,6 +14,7 @@ app = FastAPI()
 class userList(BaseModel):
     name: Optional[str] = None  # name 是可選的
     idNumber: Optional[str] = None  # idNumber 是可選的
+    tel: Optional[str] = None
     healthMeasurement: Optional[int] = 0  # 默認為 0，但也可以不填
     healthEducation: Optional[int] = 0  # 默認為 0，但也可以不填
     exercise: Optional[int] = 0  # 默認為 0，但也可以不填
